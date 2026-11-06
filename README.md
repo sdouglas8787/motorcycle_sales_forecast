@@ -6,6 +6,18 @@ Office UK climate series.
 
 ![Forecast chart](outputs/forecast_chart.png)
 
+## Forecast vs actual
+
+The forecast was fixed at publication and is never revised. As MCIA publishes
+each new month, `scripts/10_forecast_vs_actual.py` scores it against the
+actual; the running table is `outputs/forecast_vs_actual.csv`.
+
+Three months in (Aug - Oct 2026): MAPE 8.8% against the backtest's promised
+10.3%, all three actuals inside the 80% interval, and OLS ahead of the
+SARIMAX benchmark in every month so far. One honest wrinkle: all three errors
+sit the same side, with each month under-forecast. Three readings is too few
+to call that bias, so it is noted here rather than corrected.
+
 ## Headline results
 
 - **79-month series, Jan 2020 – Jul 2026, zero gaps.** Each MCIA PDF also
