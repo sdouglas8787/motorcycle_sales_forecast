@@ -1,0 +1,642 @@
+<title>Two Wheels Ahead</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --hairline: rgba(11, 11, 11, 0.10);
+    --s1: #2a78d6;  /* blue   */
+    --s2: #eb6834;  /* orange */
+    --s3: #1baf7a;  /* aqua   */
+    --s4: #eda100;  /* yellow */
+    --band: rgba(42, 120, 214, 0.10);
+    --deemph: #c3c2b7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --hairline: rgba(255, 255, 255, 0.10);
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+      --s4: #c98500;
+      --band: rgba(57, 135, 229, 0.14);
+      --deemph: #52514e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --hairline: rgba(255, 255, 255, 0.10);
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+    --s4: #c98500;
+    --band: rgba(57, 135, 229, 0.14);
+    --deemph: #52514e;
+  }
+
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 400 16px/1.6 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 40px 20px 72px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+
+  h1, h2 { font-family: "Saira Semi Condensed", "IBM Plex Sans", system-ui, sans-serif; text-wrap: balance; }
+  h1 { font-size: 2.4rem; font-weight: 700; line-height: 1.15; letter-spacing: 0.01em; }
+  h2 { font-size: 1.35rem; font-weight: 600; margin-bottom: 4px; }
+  .eyebrow {
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-2); margin-bottom: 10px;
+  }
+  header p.sub { color: var(--ink-2); max-width: 62ch; margin-top: 10px; }
+  section > p { color: var(--ink-2); max-width: 68ch; margin-top: 6px; }
+  section > p strong, header strong { color: var(--ink); font-weight: 600; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 8px;
+    padding: 16px 18px 14px; display: flex; flex-direction: column; gap: 2px;
+  }
+  .tile .label { font-size: 0.8rem; color: var(--ink-2); }
+  .tile .value { font-size: 1.7rem; font-weight: 600; line-height: 1.2; }
+  .tile .note { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 8px;
+    padding: 20px 20px 12px; margin-top: 14px; position: relative;
+  }
+  .card .chart { width: 100%; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 2px 0 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; font-size: 0.8rem; color: var(--ink-2); }
+  .key-line { display: inline-block; width: 18px; height: 0; border-top: 2px solid; border-radius: 1px; }
+  .key-line.dashed { border-top-style: dashed; }
+  .key-rect { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+
+  .tooltip {
+    position: absolute; pointer-events: none; z-index: 5; display: none;
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.13);
+    padding: 8px 11px; font-size: 0.78rem; min-width: 130px;
+  }
+  .tooltip .tt-title { color: var(--muted); margin-bottom: 4px; }
+  .tooltip .tt-row { display: flex; align-items: center; gap: 7px; justify-content: space-between; }
+  .tooltip .tt-row .nm { color: var(--ink-2); display: inline-flex; align-items: center; gap: 6px; }
+  .tooltip .tt-row .vl { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .tooltip .tt-key { display: inline-block; width: 12px; height: 0; border-top: 2px solid; }
+
+  details { margin: 10px 2px 0; }
+  summary { cursor: pointer; font-size: 0.8rem; color: var(--ink-2); }
+  summary:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; border-radius: 3px; }
+  table { border-collapse: collapse; margin-top: 10px; font-size: 0.8rem; width: 100%; }
+  .tscroll { overflow-x: auto; }
+  th, td { text-align: right; padding: 4px 10px; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--ink-2); font-weight: 500; }
+
+  .split-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .split-grid .card { margin-top: 0; }
+  .card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 2px; }
+  .card .subnote { font-size: 0.78rem; color: var(--muted); margin-bottom: 10px; }
+  @media (max-width: 760px) { .split-grid { grid-template-columns: 1fr; } }
+
+  .spec-table { max-width: 640px; }
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85em; background: var(--surface); border: 1px solid var(--hairline);
+    padding: 1px 5px; border-radius: 4px;
+  }
+  footer { color: var(--muted); font-size: 0.78rem; border-top: 1px solid var(--grid); padding-top: 16px; }
+  footer a { color: var(--ink-2); }
+  @media (prefers-reduced-motion: no-preference) {
+    .tile, .card { transition: border-color 0.15s ease; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">UK market · monthly · data to July 2026</div>
+    <h1>Two Wheels Ahead</h1>
+    <p class="sub">A twelve-month forecast of UK new motorcycle registrations, built from
+    <strong>79 months of MCIA press statistics</strong> (scraped from the monthly PDFs) and
+    Met Office weather data — split by style, engine size and brand.</p>
+  </header>
+
+  <div class="kpis" id="kpis"></div>
+
+  <section>
+    <h2>The market, and where it goes next</h2>
+    <p>Registrations run on a hard seasonal clock — <strong>March and September plate months</strong>,
+    a summer shoulder, a deep winter trough — disrupted by three shocks: the 2020 lockdowns, and the
+    Euro&nbsp;5+ deadline that pulled roughly a December's worth of extra bikes into
+    <strong>December 2024</strong> and hollowed out early 2025. The 2026 season is running
+    <strong>+15.6% year on year</strong>, and the model expects that recovery to hold.</p>
+    <div class="card" id="mainCard">
+      <div class="legend">
+        <span><span class="key-line" style="border-color:var(--s1)"></span>Actual</span>
+        <span><span class="key-line dashed" style="border-color:var(--s1)"></span>Forecast</span>
+        <span><span class="key-rect" style="background:var(--band)"></span>80% interval</span>
+      </div>
+      <div class="chart" id="mainChart"></div>
+      <div class="tooltip" id="mainTip"></div>
+      <details><summary>Table: monthly actuals &amp; forecast</summary><div class="tscroll" id="mainTable"></div></details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Seasonality is the engine</h2>
+    <p>The month dummies alone explain most of the variance. March sells
+    <strong>~3× a January</strong>; September is the second key — both are new-plate months.
+    Weather, by contrast, barely registers: once seasonality and the shocks are controlled, the only
+    signal that survives is <strong>last month's temperature anomaly during riding season</strong>
+    (+1&nbsp;°C ≈ +4% registrations the following month, p&nbsp;≈&nbsp;0.07). Sunshine and rainfall add nothing.</p>
+    <div class="card" id="seasCard">
+      <div class="chart" id="seasChart"></div>
+      <div class="tooltip" id="seasTip"></div>
+      <details><summary>Table: seasonal index by month</summary><div class="tscroll" id="seasTable"></div></details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Engine-size mix</h2>
+    <p>Two markets share the plate: <strong>small commuters (≤125cc)</strong> — a third of volume,
+    strongest in winter months — and <strong>big bikes (over 500cc)</strong>, which own the March and
+    September peaks. The mid class is quietly growing; electric remains under 4% and is drifting down,
+    not up.</p>
+    <div class="card" id="sizeCard">
+      <div class="legend" id="sizeLegend"></div>
+      <div class="chart" id="sizeChart"></div>
+      <div class="tooltip" id="sizeTip"></div>
+      <details><summary>Table: share of registrations by size group</summary><div class="tscroll" id="sizeTable"></div></details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Style and brand, next twelve months</h2>
+    <p><strong>Adventure</strong> is the biggest style and the fastest-growing (+26% YTD);
+    with scooters and nakeds it covers six in ten registrations. <strong>Honda</strong> takes one
+    registration in five — double anyone else. Brands outside MCIA's monthly top-ten
+    table are grouped as Other.</p>
+    <div class="split-grid">
+      <div class="card">
+        <h3>By style</h3>
+        <div class="subnote">Forecast registrations, Aug 2026 – Jul 2027</div>
+        <div class="chart" id="styleChart"></div>
+        <div class="tooltip" id="styleTip"></div>
+        <details><summary>Table</summary><div class="tscroll" id="styleTable"></div></details>
+      </div>
+      <div class="card">
+        <h3>By brand</h3>
+        <div class="subnote">Forecast registrations, Aug 2026 – Jul 2027</div>
+        <div class="chart" id="brandChart"></div>
+        <div class="tooltip" id="brandTip"></div>
+        <details><summary>Table</summary><div class="tscroll" id="brandTable"></div></details>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Method</h2>
+    <p>The aggregate model is a linear regression on the log of registrations —
+    <code>trend + month dummies + lagged in-season temperature + event dummies</code>
+    (COVID lockdowns; Euro&nbsp;5+ pre-buy and payback) — chosen because it won the rolling
+    one-step backtest over the last 18 months. A SARIMAX variant with the same regressors came second.
+    Splits are share-of-market models on the 42 months of segment data (the current MCIA taxonomy
+    begins January 2023), renormalised so every split adds back to the aggregate. Intervals are 80%.</p>
+    <div class="card spec-table">
+      <table>
+        <thead><tr><th>Model</th><th>Backtest MAPE</th></tr></thead>
+        <tbody id="mapeRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Sources: <a href="https://mcia.co.uk">MCIA monthly press statistics</a> (new road registrations; © MCIA) ·
+    <a href="https://www.metoffice.gov.uk/research/climate/maps-and-data/uk-and-regional-series">Met Office HadUK-Grid UK areal series</a>.
+    Aggregate series Jan 2020 – Jul 2026; segment series from Jan 2023. Forecast produced 29 Aug 2026.
+    Backtest: rolling-origin, one-step-ahead, Feb 2025 – Jul 2026.
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const DATA = {"actual":[["2020-01",6146],["2020-02",4607],["2020-03",13075],["2020-04",1623],["2020-05",5394],["2020-06",13361],["2020-07",14070],["2020-08",9087],["2020-09",14513],["2020-10",8856],["2020-11",5982],["2020-12",7898],["2021-01",3834],["2021-02",2868],["2021-03",12268],["2021-04",10874],["2021-05",13398],["2021-06",14863],["2021-07",12437],["2021-08",8607],["2021-09",13425],["2021-10",8517],["2021-11",7292],["2021-12",5988],["2022-01",6187],["2022-02",5212],["2022-03",16784],["2022-04",11327],["2022-05",11930],["2022-06",12523],["2022-07",11017],["2022-08",8841],["2022-09",12137],["2022-10",8003],["2022-11",6647],["2022-12",5926],["2023-01",5764],["2023-02",4814],["2023-03",17443],["2023-04",9848],["2023-05",10889],["2023-06",13518],["2023-07",10014],["2023-08",8209],["2023-09",13471],["2023-10",8066],["2023-11",6316],["2023-12",5236],["2024-01",6043],["2024-02",5106],["2024-03",16803],["2024-04",9960],["2024-05",11172],["2024-06",12734],["2024-07",9283],["2024-08",7735],["2024-09",11570],["2024-10",7861],["2024-11",6926],["2024-12",11206],["2025-01",4201],["2025-02",3457],["2025-03",13086],["2025-04",8506],["2025-05",9800],["2025-06",10361],["2025-07",9057],["2025-08",6846],["2025-09",11335],["2025-10",7153],["2025-11",5244],["2025-12",4876],["2026-01",4878],["2026-02",3964],["2026-03",15056],["2026-04",10050],["2026-05",11262],["2026-06",11711],["2026-07",10644]],"forecast":[["2026-08",7574,6218,9073],["2026-09",10871,8928,13015],["2026-10",7048,5802,8418],["2026-11",5567,4583,6650],["2026-12",5099,4184,6110],["2027-01",4983,4095,5962],["2027-02",4021,3305,4812],["2027-03",12209,9995,14664],["2027-04",7947,6529,9511],["2027-05",10606,8729,12670],["2027-06",10521,8627,12615],["2027-07",8916,7298,10710]],"seasonal":[0.628,0.509,1.55,1.012,1.356,1.349,1.147,0.877,1.353,0.88,0.697,0.641],"style_next12":[["Adventure",22284],["Scooter",18296],["Naked",17816],["Modern Classic",11597],["Road Sport",8804],["Custom",5412],["Competition",5307],["Moped",3811],["Touring",1536],["Tricycle",377],["Unspecified",126]],"size_next12":[["Large (over 500cc)",40834],["Small (up to 125cc)",32912],["Medium (126-500cc)",18928],["Electric",2689]],"brand_next12":[["Other",31054],["Honda",19037],["Triumph",9230],["BMW",8481],["Yamaha",8249],["Lexmoto",5391],["Kawasaki",5129],["Suzuki",3275],["Royal Enfield",2829],["KTM",2687]],"size_groups":["Small (up to 125cc)","Medium (126-500cc)","Large (over 500cc)","Electric"],"size_shares_hist":[["2023-01",0.4349,0.1745,0.3557,0.0349],["2023-02",0.4605,0.1697,0.3241,0.0457],["2023-03",0.2527,0.1492,0.5799,0.0183],["2023-04",0.3176,0.1611,0.4871,0.0341],["2023-05",0.337,0.1353,0.4913,0.0364],["2023-06",0.3324,0.1337,0.5004,0.0334],["2023-07",0.3896,0.1466,0.425,0.0388],["2023-08",0.4212,0.134,0.4041,0.0407],["2023-09",0.3667,0.1331,0.4696,0.0306],["2023-10",0.4513,0.1576,0.3282,0.063],["2023-11",0.4626,0.156,0.3436,0.0378],["2023-12",0.4003,0.1306,0.4202,0.0489],["2024-01",0.4107,0.2078,0.3396,0.0419],["2024-02",0.4671,0.1751,0.3282,0.0296],["2024-03",0.2433,0.1895,0.5451,0.022],["2024-04",0.3338,0.1895,0.4351,0.0416],["2024-05",0.3295,0.183,0.4603,0.0272],["2024-06",0.2993,0.1754,0.4912,0.0342],["2024-07",0.3708,0.1923,0.4013,0.0357],["2024-08",0.4206,0.1696,0.3642,0.0456],["2024-09",0.3378,0.1589,0.4717,0.0316],["2024-10",0.3909,0.1656,0.4084,0.0351],["2024-11",0.444,0.1722,0.3452,0.0386],["2024-12",0.4465,0.1619,0.3721,0.0195],["2025-01",0.3513,0.2057,0.402,0.0409],["2025-02",0.4646,0.1796,0.3191,0.0367],["2025-03",0.2276,0.1917,0.554,0.0267],["2025-04",0.3063,0.1751,0.4904,0.0283],["2025-05",0.2995,0.1778,0.4822,0.0405],["2025-06",0.2998,0.1478,0.5245,0.028],["2025-07",0.3825,0.1644,0.4128,0.0403],["2025-08",0.4443,0.1404,0.3783,0.037],["2025-09",0.3179,0.1708,0.4807,0.0306],["2025-10",0.4338,0.198,0.3225,0.0457],["2025-11",0.4129,0.2025,0.3434,0.0412],["2025-12",0.3657,0.1887,0.405,0.0406],["2026-01",0.386,0.2302,0.3583,0.0254],["2026-02",0.4735,0.1809,0.3138,0.0318],["2026-03",0.2527,0.1854,0.5442,0.0177],["2026-04",0.3525,0.1765,0.4346,0.0363],["2026-05",0.3207,0.2082,0.4484,0.0226],["2026-06",0.325,0.1858,0.468,0.0212],["2026-07",0.3896,0.1722,0.4091,0.0291]],"size_shares_fc":[["2026-08",0.4187,0.1728,0.3722,0.0363],["2026-09",0.3307,0.1791,0.464,0.0262],["2026-10",0.4153,0.1985,0.3431,0.0432],["2026-11",0.4298,0.2017,0.3341,0.0344],["2026-12",0.3941,0.1852,0.3892,0.0316],["2027-01",0.3832,0.2355,0.3515,0.0298],["2027-02",0.4539,0.2073,0.3089,0.03],["2027-03",0.2315,0.2099,0.5434,0.0152],["2027-04",0.315,0.2065,0.4494,0.0291],["2027-05",0.3091,0.207,0.4581,0.0257],["2027-06",0.3016,0.1916,0.4836,0.0232],["2027-07",0.3705,0.1998,0.3996,0.03]],"mape":{"seasonal_naive":0.23,"ols":0.103,"sarimax":0.146},"kpi":{"next12":95362,"warm":96975,"cool":93791,"aug":7574,"aug_lo":6218,"aug_hi":9073}};
+
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const fmt = (n) => Math.round(n).toLocaleString("en-GB");
+  const fmtPct = (x) => (x * 100).toFixed(1) + "%";
+  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const fmtYM = (ym) => { const [y, m] = ym.split("-"); return MONTH_NAMES[+m - 1] + " " + y; };
+
+  function el(tag, attrs, parent) {
+    const node = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) node.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(node);
+    return node;
+  }
+  function div(cls, parent) {
+    const node = document.createElement("div");
+    if (cls) node.className = cls;
+    if (parent) parent.appendChild(node);
+    return node;
+  }
+
+  /* ---------- KPI tiles ---------- */
+  function renderKpis() {
+    const host = document.getElementById("kpis");
+    host.replaceChildren();
+    const k = DATA.kpi;
+    const tiles = [
+      ["Next 12 months", fmt(k.next12), "warm summer " + fmt(k.warm) + " · cool " + fmt(k.cool)],
+      ["August 2026 nowcast", fmt(k.aug), "80% interval " + fmt(k.aug_lo) + "–" + fmt(k.aug_hi)],
+      ["Backtest error (OLS)", fmtPct(DATA.mape.ols), "vs " + fmtPct(DATA.mape.seasonal_naive) + " seasonal naive"],
+      ["Weather effect", "+4%", "per +1 °C last month, in season · p ≈ 0.07"],
+    ];
+    for (const [label, value, note] of tiles) {
+      const t = div("tile", host);
+      div("label", t).textContent = label;
+      div("value", t).textContent = value;
+      div("note", t).textContent = note;
+    }
+  }
+
+  /* ---------- tooltip helper ---------- */
+  function tooltipCtl(tipEl, cardEl) {
+    return {
+      show(x, y, title, rows) {
+        tipEl.replaceChildren();
+        const t = div("tt-title", tipEl); t.textContent = title;
+        for (const r of rows) {
+          const row = div("tt-row", tipEl);
+          const nm = document.createElement("span"); nm.className = "nm";
+          if (r.color) {
+            const key = document.createElement("span");
+            key.className = "tt-key"; key.style.borderTopColor = r.color;
+            nm.appendChild(key);
+          }
+          nm.appendChild(document.createTextNode(r.name));
+          const vl = document.createElement("span"); vl.className = "vl"; vl.textContent = r.value;
+          row.appendChild(nm); row.appendChild(vl);
+        }
+        tipEl.style.display = "block";
+        const cw = cardEl.clientWidth, tw = tipEl.offsetWidth;
+        let left = x + 14;
+        if (left + tw > cw - 8) left = x - tw - 14;
+        tipEl.style.left = Math.max(8, left) + "px";
+        tipEl.style.top = Math.max(8, y - 10) + "px";
+      },
+      hide() { tipEl.style.display = "none"; },
+    };
+  }
+
+  /* ---------- main chart: actuals + forecast + band ---------- */
+  function renderMain() {
+    const host = document.getElementById("mainChart");
+    const card = document.getElementById("mainCard");
+    host.replaceChildren();
+    const W = host.clientWidth || 880, H = 320;
+    const M = { l: 46, r: 14, t: 10, b: 26 };
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img",
+      "aria-label": "Monthly UK motorcycle registrations 2020 to 2026 with a 12 month forecast" }, host);
+
+    const months = DATA.actual.map(d => d[0]).concat(DATA.forecast.map(d => d[0]));
+    const n = months.length;
+    const yMax = 18000;
+    const x = (i) => M.l + (i / (n - 1)) * (W - M.l - M.r);
+    const y = (v) => M.t + (1 - v / yMax) * (H - M.t - M.b);
+
+    for (let g = 0; g <= yMax; g += 4500) {
+      el("line", { x1: M.l, x2: W - M.r, y1: y(g), y2: y(g), stroke: cssVar("--grid"), "stroke-width": 1 }, svg);
+      el("text", { x: M.l - 8, y: y(g) + 4, "text-anchor": "end", "font-size": 11,
+        fill: cssVar("--muted"), "font-variant-numeric": "tabular-nums" }, svg).textContent = g ? fmt(g) : "0";
+    }
+    months.forEach((ym, i) => {
+      if (ym.endsWith("-01")) {
+        el("text", { x: x(i), y: H - 8, "text-anchor": "middle", "font-size": 11,
+          fill: cssVar("--muted") }, svg).textContent = ym.slice(0, 4);
+      }
+    });
+    el("line", { x1: M.l, x2: W - M.r, y1: y(0), y2: y(0), stroke: cssVar("--baseline"), "stroke-width": 1 }, svg);
+
+    const nA = DATA.actual.length;
+    const band = DATA.forecast.map((d, j) => `${x(nA + j)},${y(d[3])}`)
+      .concat(DATA.forecast.map((d, j) => `${x(nA + DATA.forecast.length - 1 - j)},${y(DATA.forecast[DATA.forecast.length - 1 - j][2])}`));
+    el("polygon", { points: band.join(" "), fill: cssVar("--band") }, svg);
+
+    const s1 = cssVar("--s1");
+    el("polyline", { points: DATA.actual.map((d, i) => `${x(i)},${y(d[1])}`).join(" "),
+      fill: "none", stroke: s1, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    const fcPts = [[nA - 1, DATA.actual[nA - 1][1]]].concat(DATA.forecast.map((d, j) => [nA + j, d[1]]));
+    el("polyline", { points: fcPts.map(p => `${x(p[0])},${y(p[1])}`).join(" "),
+      fill: "none", stroke: s1, "stroke-width": 2, "stroke-dasharray": "5 4",
+      "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+
+    const notes = [["2020-04", "COVID lockdown", 14], ["2024-12", "Euro 5+ pre-buy", -10]];
+    for (const [ym, label, dy] of notes) {
+      const i = months.indexOf(ym);
+      const v = DATA.actual[i][1];
+      el("circle", { cx: x(i), cy: y(v), r: 4, fill: s1, stroke: cssVar("--surface"), "stroke-width": 2 }, svg);
+      el("text", { x: x(i), y: y(v) + dy + (dy > 0 ? 8 : 0), "text-anchor": "middle",
+        "font-size": 11, fill: cssVar("--ink-2") }, svg).textContent = label;
+    }
+
+    const cross = el("line", { y1: M.t, y2: H - M.b, stroke: cssVar("--baseline"),
+      "stroke-width": 1, visibility: "hidden" }, svg);
+    const dot = el("circle", { r: 4.5, fill: s1, stroke: cssVar("--surface"),
+      "stroke-width": 2, visibility: "hidden" }, svg);
+    const tip = tooltipCtl(document.getElementById("mainTip"), card);
+    const values = DATA.actual.map(d => ({ ym: d[0], rows: [{ name: "Actual", value: fmt(d[1]), color: s1 }], v: d[1] }))
+      .concat(DATA.forecast.map(d => ({ ym: d[0], v: d[1],
+        rows: [{ name: "Forecast", value: fmt(d[1]), color: s1 },
+               { name: "80% interval", value: fmt(d[2]) + "–" + fmt(d[3]) }] })));
+
+    svg.addEventListener("pointermove", (ev) => {
+      const rect = svg.getBoundingClientRect();
+      const px = ev.clientX - rect.left;
+      const i = Math.max(0, Math.min(n - 1, Math.round((px - M.l) / (W - M.l - M.r) * (n - 1))));
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i));
+      cross.setAttribute("visibility", "visible");
+      dot.setAttribute("cx", x(i)); dot.setAttribute("cy", y(values[i].v));
+      dot.setAttribute("visibility", "visible");
+      const cardRect = card.getBoundingClientRect();
+      tip.show(ev.clientX - cardRect.left, ev.clientY - cardRect.top, fmtYM(values[i].ym), values[i].rows);
+    });
+    svg.addEventListener("pointerleave", () => {
+      cross.setAttribute("visibility", "hidden");
+      dot.setAttribute("visibility", "hidden");
+      tip.hide();
+    });
+
+    const tbl = document.getElementById("mainTable");
+    tbl.replaceChildren(makeTable(
+      ["Month", "Registrations", "80% low", "80% high"],
+      DATA.actual.map(d => [fmtYM(d[0]), fmt(d[1]), "", ""])
+        .concat(DATA.forecast.map(d => [fmtYM(d[0]) + " (f)", fmt(d[1]), fmt(d[2]), fmt(d[3])]))
+    ));
+  }
+
+  /* ---------- seasonal columns ---------- */
+  function renderSeasonal() {
+    const host = document.getElementById("seasChart");
+    const card = document.getElementById("seasCard");
+    host.replaceChildren();
+    const W = host.clientWidth || 880, H = 220;
+    const M = { l: 40, r: 14, t: 12, b: 24 };
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img",
+      "aria-label": "Seasonal index of registrations by calendar month" }, host);
+    const yMax = 1.6;
+    const y = (v) => M.t + (1 - v / yMax) * (H - M.t - M.b);
+    const slot = (W - M.l - M.r) / 12;
+    const bw = Math.min(24, slot - 2);
+    const s1 = cssVar("--s1");
+
+    for (const g of [0, 0.5, 1.0, 1.5]) {
+      el("line", { x1: M.l, x2: W - M.r, y1: y(g), y2: y(g), stroke: cssVar("--grid"), "stroke-width": 1 }, svg);
+      el("text", { x: M.l - 8, y: y(g) + 4, "text-anchor": "end", "font-size": 11,
+        fill: cssVar("--muted"), "font-variant-numeric": "tabular-nums" }, svg).textContent = "×" + g.toFixed(1);
+    }
+    const tip = tooltipCtl(document.getElementById("seasTip"), card);
+    DATA.seasonal.forEach((v, i) => {
+      const cx = M.l + slot * i + slot / 2;
+      const bar = el("path", { d: roundedColumn(cx - bw / 2, y(v), bw, y(0) - y(v)), fill: s1 }, svg);
+      el("text", { x: cx, y: H - 8, "text-anchor": "middle", "font-size": 11,
+        fill: cssVar("--muted") }, svg).textContent = MONTH_NAMES[i];
+      if (i === 2 || i === 8 || i === 1) {
+        el("text", { x: cx, y: y(v) - 6, "text-anchor": "middle", "font-size": 11,
+          fill: cssVar("--ink-2"), "font-variant-numeric": "tabular-nums" }, svg).textContent = "×" + v.toFixed(2);
+      }
+      const hit = el("rect", { x: M.l + slot * i, y: M.t, width: slot, height: H - M.t - M.b,
+        fill: "transparent" }, svg);
+      hit.addEventListener("pointermove", (ev) => {
+        bar.setAttribute("opacity", "0.8");
+        const cardRect = card.getBoundingClientRect();
+        tip.show(ev.clientX - cardRect.left, ev.clientY - cardRect.top, MONTH_NAMES[i],
+          [{ name: "Seasonal index", value: "×" + v.toFixed(2), color: s1 }]);
+      });
+      hit.addEventListener("pointerleave", () => { bar.removeAttribute("opacity"); tip.hide(); });
+    });
+    el("line", { x1: M.l, x2: W - M.r, y1: y(0), y2: y(0), stroke: cssVar("--baseline"), "stroke-width": 1 }, svg);
+
+    document.getElementById("seasTable").replaceChildren(makeTable(
+      ["Month", "Index (average month = 1)"],
+      DATA.seasonal.map((v, i) => [MONTH_NAMES[i], "×" + v.toFixed(2)])
+    ));
+  }
+
+  function roundedColumn(x0, y0, w, h) {
+    const r = Math.min(4, h / 2, w / 2);
+    return `M${x0},${y0 + h} L${x0},${y0 + r} Q${x0},${y0} ${x0 + r},${y0}` +
+           ` L${x0 + w - r},${y0} Q${x0 + w},${y0} ${x0 + w},${y0 + r} L${x0 + w},${y0 + h} Z`;
+  }
+  function roundedBar(x0, y0, w, h) {
+    const r = Math.min(4, w / 2, h / 2);
+    return `M${x0},${y0} L${x0 + w - r},${y0} Q${x0 + w},${y0} ${x0 + w},${y0 + r}` +
+           ` L${x0 + w},${y0 + h - r} Q${x0 + w},${y0 + h} ${x0 + w - r},${y0 + h} L${x0},${y0 + h} Z`;
+  }
+
+  /* ---------- size-mix lines ---------- */
+  function renderSize() {
+    const host = document.getElementById("sizeChart");
+    const card = document.getElementById("sizeCard");
+    host.replaceChildren();
+    const groups = DATA.size_groups;
+    const colors = [cssVar("--s1"), cssVar("--s2"), cssVar("--s3"), cssVar("--s4")];
+    const hist = DATA.size_shares_hist, fc = DATA.size_shares_fc;
+    const all = hist.concat(fc);
+    const n = all.length, nH = hist.length;
+    const W = host.clientWidth || 880, H = 260;
+    const M = { l: 44, r: 118, t: 10, b: 24 };
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img",
+      "aria-label": "Share of registrations by engine size group, history and forecast" }, host);
+    const yMax = 0.6;
+    const x = (i) => M.l + (i / (n - 1)) * (W - M.l - M.r);
+    const y = (v) => M.t + (1 - v / yMax) * (H - M.t - M.b);
+
+    for (const g of [0, 0.2, 0.4, 0.6]) {
+      el("line", { x1: M.l, x2: W - M.r, y1: y(g), y2: y(g), stroke: cssVar("--grid"), "stroke-width": 1 }, svg);
+      el("text", { x: M.l - 8, y: y(g) + 4, "text-anchor": "end", "font-size": 11,
+        fill: cssVar("--muted"), "font-variant-numeric": "tabular-nums" }, svg).textContent = (g * 100) + "%";
+    }
+    all.forEach((row, i) => {
+      if (row[0].endsWith("-01")) {
+        el("text", { x: x(i), y: H - 8, "text-anchor": "middle", "font-size": 11,
+          fill: cssVar("--muted") }, svg).textContent = row[0].slice(0, 4);
+      }
+    });
+
+    groups.forEach((g, gi) => {
+      el("polyline", { points: hist.map((r, i) => `${x(i)},${y(r[gi + 1])}`).join(" "),
+        fill: "none", stroke: colors[gi], "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+      const fcPts = [[nH - 1, hist[nH - 1][gi + 1]]].concat(fc.map((r, j) => [nH + j, r[gi + 1]]));
+      el("polyline", { points: fcPts.map(p => `${x(p[0])},${y(p[1])}`).join(" "),
+        fill: "none", stroke: colors[gi], "stroke-width": 2, "stroke-dasharray": "5 4",
+        "stroke-linejoin": "round" }, svg);
+    });
+    // End labels with collision resolution: sort by end value, force
+    // >= 14px separation, and draw a leader line where a label moved.
+    const shorts = ["Small ≤125", "Medium 126–500", "Large >500", "Electric"];
+    const ends = groups.map((g, gi) => ({ gi, yPos: y(fc[fc.length - 1][gi + 1]) }))
+      .sort((a, b) => a.yPos - b.yPos);
+    for (let i = 1; i < ends.length; i++) {
+      if (ends[i].yPos - ends[i - 1].yPos < 14) ends[i].yPos = ends[i - 1].yPos + 14;
+    }
+    for (const e of ends) {
+      const yTrue = y(fc[fc.length - 1][e.gi + 1]);
+      if (Math.abs(e.yPos - yTrue) > 2) {
+        el("line", { x1: W - M.r + 2, x2: W - M.r + 6, y1: yTrue, y2: e.yPos,
+          stroke: cssVar("--baseline"), "stroke-width": 1 }, svg);
+      }
+      el("text", { x: W - M.r + 8, y: e.yPos + 4, "font-size": 11,
+        fill: cssVar("--ink-2") }, svg).textContent = shorts[e.gi];
+    }
+
+    const legend = document.getElementById("sizeLegend");
+    legend.replaceChildren();
+    groups.forEach((g, gi) => {
+      const s = document.createElement("span");
+      const key = document.createElement("span");
+      key.className = "key-line"; key.style.borderColor = colors[gi];
+      s.appendChild(key); s.appendChild(document.createTextNode(g));
+      legend.appendChild(s);
+    });
+
+    const cross = el("line", { y1: M.t, y2: H - M.b, stroke: cssVar("--baseline"),
+      "stroke-width": 1, visibility: "hidden" }, svg);
+    const tip = tooltipCtl(document.getElementById("sizeTip"), card);
+    svg.addEventListener("pointermove", (ev) => {
+      const rect = svg.getBoundingClientRect();
+      const px = ev.clientX - rect.left;
+      const i = Math.max(0, Math.min(n - 1, Math.round((px - M.l) / (W - M.l - M.r) * (n - 1))));
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i));
+      cross.setAttribute("visibility", "visible");
+      const cardRect = card.getBoundingClientRect();
+      tip.show(ev.clientX - cardRect.left, ev.clientY - cardRect.top,
+        fmtYM(all[i][0]) + (i >= nH ? " (forecast)" : ""),
+        groups.map((g, gi) => ({ name: g, value: fmtPct(all[i][gi + 1]), color: colors[gi] })));
+    });
+    svg.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); tip.hide(); });
+
+    document.getElementById("sizeTable").replaceChildren(makeTable(
+      ["Month"].concat(groups),
+      all.map((r, i) => [fmtYM(r[0]) + (i >= nH ? " (f)" : "")].concat(groups.map((g, gi) => fmtPct(r[gi + 1]))))
+    ));
+  }
+
+  /* ---------- horizontal bars (style, brand) ---------- */
+  function renderBars(chartId, tipId, tableId, cardSel, rows, deemphName) {
+    const host = document.getElementById(chartId);
+    const card = host.closest(".card");
+    host.replaceChildren();
+    const W = host.clientWidth || 420;
+    const rowH = 26, labelW = 108, valueW = 56;
+    const H = rows.length * rowH + 6;
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img" }, host);
+    const maxV = Math.max(...rows.map(r => r[1]));
+    const total = rows.reduce((a, r) => a + r[1], 0);
+    const barMax = W - labelW - valueW - 8;
+    const s1 = cssVar("--s1");
+    const tip = tooltipCtl(document.getElementById(tipId), card);
+
+    rows.forEach((r, i) => {
+      const y0 = i * rowH + 4;
+      const w = Math.max(2, r[1] / maxV * barMax);
+      el("text", { x: labelW - 8, y: y0 + rowH / 2 + 1, "text-anchor": "end", "font-size": 11.5,
+        fill: cssVar("--ink-2"), "dominant-baseline": "middle" }, svg).textContent = r[0];
+      const color = (r[0] === deemphName) ? cssVar("--deemph") : s1;
+      const bar = el("path", { d: roundedBar(labelW, y0 + 4, w, rowH - 10), fill: color }, svg);
+      el("text", { x: labelW + w + 6, y: y0 + rowH / 2 + 1, "font-size": 11.5,
+        fill: cssVar("--ink-2"), "dominant-baseline": "middle",
+        "font-variant-numeric": "tabular-nums" }, svg).textContent = fmt(r[1]);
+      const hit = el("rect", { x: 0, y: y0, width: W, height: rowH, fill: "transparent" }, svg);
+      hit.addEventListener("pointermove", (ev) => {
+        bar.setAttribute("opacity", "0.82");
+        const cardRect = card.getBoundingClientRect();
+        tip.show(ev.clientX - cardRect.left, ev.clientY - cardRect.top, r[0],
+          [{ name: "Forecast", value: fmt(r[1]), color: color },
+           { name: "Share", value: fmtPct(r[1] / total) }]);
+      });
+      hit.addEventListener("pointerleave", () => { bar.removeAttribute("opacity"); tip.hide(); });
+    });
+
+    document.getElementById(tableId).replaceChildren(makeTable(
+      ["Segment", "Forecast", "Share"],
+      rows.map(r => [r[0], fmt(r[1]), fmtPct(r[1] / total)])
+    ));
+  }
+
+  function makeTable(headers, rows) {
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const trh = document.createElement("tr");
+    for (const h of headers) {
+      const th = document.createElement("th"); th.textContent = h; trh.appendChild(th);
+    }
+    thead.appendChild(trh); table.appendChild(thead);
+    const tbody = document.createElement("tbody");
+    for (const r of rows) {
+      const tr = document.createElement("tr");
+      for (const c of r) {
+        const td = document.createElement("td"); td.textContent = c; tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    return table;
+  }
+
+  function renderMape() {
+    const body = document.getElementById("mapeRows");
+    body.replaceChildren();
+    const names = { seasonal_naive: "Seasonal naive (same month last year)",
+      ols: "OLS regression (chosen)", sarimax: "SARIMAX (1,0,0)(1,1,0)12" };
+    for (const key of ["ols", "sarimax", "seasonal_naive"]) {
+      const tr = document.createElement("tr");
+      const td1 = document.createElement("td"); td1.textContent = names[key];
+      const td2 = document.createElement("td"); td2.textContent = fmtPct(DATA.mape[key]);
+      tr.appendChild(td1); tr.appendChild(td2); body.appendChild(tr);
+    }
+  }
+
+  function renderAll() {
+    renderKpis();
+    renderMain();
+    renderSeasonal();
+    renderSize();
+    renderBars("styleChart", "styleTip", "styleTable", null, DATA.style_next12, null);
+    renderBars("brandChart", "brandTip", "brandTable", null, DATA.brand_next12, "Other");
+    renderMape();
+  }
+
+  renderAll();
+  let raf = null;
+  window.addEventListener("resize", () => {
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(renderAll);
+  });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+  new MutationObserver(renderAll).observe(document.documentElement,
+    { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>

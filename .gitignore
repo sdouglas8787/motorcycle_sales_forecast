@@ -1,0 +1,7 @@
+# MCIA's PDFs are theirs to distribute, not ours. scripts/01_scrape_mcia.py
+# re-downloads them; only derived aggregates are committed, with attribution.
+data/raw_pdfs/
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
